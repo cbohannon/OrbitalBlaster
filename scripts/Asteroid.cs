@@ -33,12 +33,14 @@ public partial class Asteroid : Area2D
         HitPoints--;
         if (HitPoints <= 0)
         {
+            SoundManager.Instance.PlayExplosion();
             SpawnExplosion();
             _main.AddScore(PointValue);
             QueueFree();
         }
         else
         {
+            SoundManager.Instance.PlayHit();
             FlashHit();
         }
     }

@@ -79,6 +79,7 @@ public partial class Main : Node2D
     public void StartNextWave()
     {
         _wave++;
+        SoundManager.Instance.PlayWaveAdvance();
         UpdateHUD();
 
         // Shrink spawn interval each wave, floor at 0.5s
@@ -134,6 +135,7 @@ public partial class Main : Node2D
         if (_gameOver) return;
 
         _lives--;
+        SoundManager.Instance.PlayLifeLost();
         UpdateHUD();
 
         if (_lives <= 0)
