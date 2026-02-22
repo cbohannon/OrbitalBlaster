@@ -32,6 +32,7 @@ public partial class Main : Node2D
         _finalScoreLabel    = GetNode<Label>("GameOverScreen/FinalScoreLabel");
 
         GetNode<Button>("GameOverScreen/PlayAgainButton").Pressed += OnPlayAgainPressed;
+        GetNode<Button>("GameOverScreen/QuitButton").Pressed      += OnQuitPressed;
 
         _asteroidScene = GD.Load<PackedScene>("res://scenes/Asteroid.tscn");
         _gameWorld     = GetNode<Node2D>("GameWorld");
@@ -155,6 +156,11 @@ public partial class Main : Node2D
     private void OnPlayAgainPressed()
     {
         GetTree().ReloadCurrentScene();
+    }
+
+    private void OnQuitPressed()
+    {
+        GetTree().Quit();
     }
 
     private void UpdateHUD()
