@@ -6,31 +6,79 @@ public partial class Asteroid : Area2D
     [Export] public int   HitPoints  = 1;
     [Export] public int   PointValue = 100;
 
-    private static readonly PackedScene ExplosionScene =
-        GD.Load<PackedScene>("res://scenes/Explosion.tscn");
+    public bool IsActive { get; private set; } = false;
 
-    private Main _main;
+    private Main  _main;
     private float _rotationSpeed;
+    private float _flashTimer = 0f;
+    private const float FlashDuration = 0.15f;
 
     public override void _Ready()
     {
         _main = GetTree().Root.GetNode<Main>("Main");
+    }
 
-        // Random spin between 30–90 deg/sec, direction randomised
+    // -------------------------------------------------------------------------
+    // Pool interface
+    // -------------------------------------------------------------------------
+
+    public void Activate(Vector2 position, float speed, int hitPoints, int pointValue)
+    {
+        Position    = position;
+        Speed       = speed;
+        HitPoints   = hitPoints;
+        PointValue  = pointValue;
+        Modulate    = Colors.White;
+        RotationDegrees = 0f;
+
         _rotationSpeed = (float)GD.RandRange(30.0, 90.0)
                          * (GD.Randf() > 0.5f ? 1f : -1f);
+        _flashTimer = 0f;
+
+        IsActive    = true;
+        Visible     = true;
+        ProcessMode = ProcessModeEnum.Inherit;
     }
+
+    public void Deactivate()
+    {
+        _flashTimer = 0f;
+        IsActive    = false;
+        Visible     = false;
+        ProcessMode = ProcessModeEnum.Disabled;
+    }
+
+    // -------------------------------------------------------------------------
+    // Gameplay
+    // -------------------------------------------------------------------------
 
     public override void _Process(double delta)
     {
-        Position       += Vector2.Down * Speed * (float)delta;
-        RotationDegrees += _rotationSpeed * (float)delta;
+        float dt = (float)delta;
 
-        // Crossed the base line — player loses a life
+        Position        += Vector2.Down * Speed * dt;
+        RotationDegrees += _rotationSpeed * dt;
+
+        // Drive the hit-flash without allocating a Tween object
+        if (_flashTimer > 0f)
+        {
+            _flashTimer -= dt;
+            if (_flashTimer <= 0f)
+            {
+                _flashTimer = 0f;
+                Modulate    = Colors.White;
+            }
+            else
+            {
+                float t  = 1f - (_flashTimer / FlashDuration);  // 0 → 1
+                Modulate = new Color(1f, 0.2f + 0.8f * t, 0.2f + 0.8f * t);
+            }
+        }
+
         if (Position.Y > 680f)
         {
             _main.LoseLife();
-            QueueFree();
+            _main.ReturnAsteroidToPool(this);
         }
     }
 
@@ -40,9 +88,9 @@ public partial class Asteroid : Area2D
         if (HitPoints <= 0)
         {
             SoundManager.Instance.PlayExplosion();
-            SpawnExplosion();
+            _main.SpawnExplosion(Position);
             _main.AddScore(PointValue);
-            QueueFree();
+            _main.ReturnAsteroidToPool(this);
         }
         else
         {
@@ -53,15 +101,7 @@ public partial class Asteroid : Area2D
 
     private void FlashHit()
     {
-        Modulate = new Color(1f, 0.2f, 0.2f);
-        var tween = CreateTween();
-        tween.TweenProperty(this, "modulate", Colors.White, 0.15f);
-    }
-
-    private void SpawnExplosion()
-    {
-        var explosion = ExplosionScene.Instantiate<Node2D>();
-        explosion.Position = Position;
-        GetTree().Root.GetNode<Node2D>("Main/GameWorld").AddChild(explosion);
+        Modulate    = new Color(1f, 0.2f, 0.2f);
+        _flashTimer = FlashDuration;
     }
 }
