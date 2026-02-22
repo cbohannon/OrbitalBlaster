@@ -23,6 +23,7 @@ public partial class Main : Node2D
     public override void _Ready()
     {
         _lives = StartingLives;
+        _wave  = GameSettings.StartingWave;
 
         _scoreLabel         = GetNode<Label>("HUD/ScoreLabel");
         _livesLabel         = GetNode<Label>("HUD/LivesLabel");
@@ -38,8 +39,11 @@ public partial class Main : Node2D
         _gameWorld     = GetNode<Node2D>("GameWorld");
         _spawnTimer    = GetNode<Timer>("SpawnTimer");
 
-        _spawnTimer.Timeout                    += SpawnAsteroid;
-        GetNode<Timer>("WaveTimer").Timeout    += OnWaveTimerTimeout;
+        _spawnTimer.Timeout                     += SpawnAsteroid;
+        GetNode<Timer>("WaveTimer").Timeout     += OnWaveTimerTimeout;
+
+        // Apply spawn rate for the chosen starting wave
+        _spawnTimer.WaitTime = Mathf.Max(0.5f, 2.0f - (_wave - 1) * 0.25f);
 
         UpdateHUD();
     }
@@ -157,7 +161,7 @@ public partial class Main : Node2D
 
     private void OnPlayAgainPressed()
     {
-        GetTree().ReloadCurrentScene();
+        GetTree().ChangeSceneToFile("res://scenes/StartScreen.tscn");
     }
 
     private void OnQuitPressed()
