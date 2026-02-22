@@ -55,3 +55,4 @@ Scripts that need to call these methods should get a reference via `GetTree().Ro
 - Node references are resolved in `_Ready()` via `GetNode<T>("NodePath")`
 - Exported fields (`[Export]`) are used for designer-tunable values (speeds, counts, etc.)
 - `GD.Print()` is used for debug output (Godot's equivalent of `Console.WriteLine`)
+- When creating `.tscn` files manually, omit the `uid=` field from the header (`[gd_scene format=3]`) — Godot will generate a valid UID on first load. Hand-crafted UIDs cause an `Unrecognized UID` error at startup.
