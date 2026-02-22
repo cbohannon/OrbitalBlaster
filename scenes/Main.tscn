@@ -21,6 +21,11 @@ color = Color(0.18, 0.52, 1.0, 1)
 ; Parent node for all spawned gameplay objects (asteroids, projectiles, etc.)
 [node name="GameWorld" type="Node2D" parent="."]
 
+; Fires every 2 seconds to spawn a new asteroid
+[node name="SpawnTimer" type="Timer" parent="."]
+wait_time = 2.0
+autostart = true
+
 ; HUD rendered on top of everything via CanvasLayer
 [node name="HUD" type="CanvasLayer" parent="."]
 

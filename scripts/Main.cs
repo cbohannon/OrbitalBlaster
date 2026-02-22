@@ -12,6 +12,9 @@ public partial class Main : Node2D
     private Label _livesLabel;
     private Label _waveLabel;
 
+    private PackedScene _asteroidScene;
+    private Node2D _gameWorld;
+
     public override void _Ready()
     {
         _lives = StartingLives;
@@ -20,8 +23,28 @@ public partial class Main : Node2D
         _livesLabel = GetNode<Label>("HUD/LivesLabel");
         _waveLabel  = GetNode<Label>("HUD/WaveLabel");
 
+        _asteroidScene = GD.Load<PackedScene>("res://scenes/Asteroid.tscn");
+        _gameWorld     = GetNode<Node2D>("GameWorld");
+
+        GetNode<Timer>("SpawnTimer").Timeout += SpawnAsteroid;
+
         UpdateHUD();
     }
+
+    // -------------------------------------------------------------------------
+    // Spawning
+    // -------------------------------------------------------------------------
+
+    private void SpawnAsteroid()
+    {
+        var asteroid = _asteroidScene.Instantiate<Asteroid>();
+        asteroid.Position = new Vector2((float)GD.RandRange(50, 1230), -30f);
+        _gameWorld.AddChild(asteroid);
+    }
+
+    // -------------------------------------------------------------------------
+    // Public API — called by game objects (Asteroid, etc.)
+    // -------------------------------------------------------------------------
 
     public void AddScore(int points)
     {
@@ -43,6 +66,10 @@ public partial class Main : Node2D
         _wave++;
         UpdateHUD();
     }
+
+    // -------------------------------------------------------------------------
+    // Internal
+    // -------------------------------------------------------------------------
 
     private void GameOver()
     {
