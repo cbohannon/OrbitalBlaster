@@ -28,16 +28,6 @@ public partial class Asteroid : Area2D
         }
     }
 
-    public override void _InputEvent(Viewport viewport, InputEvent @event, int shapeIdx)
-    {
-        if (@event is InputEventMouseButton mouseEvent &&
-            mouseEvent.ButtonIndex == MouseButton.Left &&
-            mouseEvent.Pressed)
-        {
-            TakeHit();
-        }
-    }
-
     public void TakeHit()
     {
         HitPoints--;
