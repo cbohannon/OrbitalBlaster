@@ -10,15 +10,21 @@ public partial class Asteroid : Area2D
         GD.Load<PackedScene>("res://scenes/Explosion.tscn");
 
     private Main _main;
+    private float _rotationSpeed;
 
     public override void _Ready()
     {
         _main = GetTree().Root.GetNode<Main>("Main");
+
+        // Random spin between 30–90 deg/sec, direction randomised
+        _rotationSpeed = (float)GD.RandRange(30.0, 90.0)
+                         * (GD.Randf() > 0.5f ? 1f : -1f);
     }
 
     public override void _Process(double delta)
     {
-        Position += Vector2.Down * Speed * (float)delta;
+        Position       += Vector2.Down * Speed * (float)delta;
+        RotationDegrees += _rotationSpeed * (float)delta;
 
         // Crossed the base line — player loses a life
         if (Position.Y > 680f)

@@ -11,6 +11,13 @@ public partial class SoundManager : Node
     private AudioStreamPlayer _lifeLostPlayer;
     private AudioStreamPlayer _wavePlayer;
 
+    // Buffers are built once at startup — avoids per-play heap allocations
+    // that would trigger GC pauses mid-game
+    private static readonly Vector2[] ExplosionBuffer  = BuildExplosion();
+    private static readonly Vector2[] HitBuffer        = BuildHit();
+    private static readonly Vector2[] LifeLostBuffer   = BuildLifeLost();
+    private static readonly Vector2[] WaveAdvanceBuffer = BuildWaveAdvance();
+
     public override void _Ready()
     {
         Instance = this;
@@ -25,10 +32,10 @@ public partial class SoundManager : Node
     // Public API
     // -------------------------------------------------------------------------
 
-    public void PlayExplosion()   => PlaySound(_explosionPlayer, BuildExplosion());
-    public void PlayHit()         => PlaySound(_hitPlayer,       BuildHit());
-    public void PlayLifeLost()    => PlaySound(_lifeLostPlayer,  BuildLifeLost());
-    public void PlayWaveAdvance() => PlaySound(_wavePlayer,      BuildWaveAdvance());
+    public void PlayExplosion()   => PlaySound(_explosionPlayer, ExplosionBuffer);
+    public void PlayHit()         => PlaySound(_hitPlayer,       HitBuffer);
+    public void PlayLifeLost()    => PlaySound(_lifeLostPlayer,  LifeLostBuffer);
+    public void PlayWaveAdvance() => PlaySound(_wavePlayer,      WaveAdvanceBuffer);
 
     // -------------------------------------------------------------------------
     // Helpers
