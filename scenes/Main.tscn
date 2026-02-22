@@ -24,9 +24,14 @@ mouse_filter = 2
 ; Parent node for all spawned gameplay objects (asteroids, projectiles, etc.)
 [node name="GameWorld" type="Node2D" parent="."]
 
-; Fires every 2 seconds to spawn a new asteroid
+; Fires every 2 seconds to spawn a new asteroid (interval shrinks each wave)
 [node name="SpawnTimer" type="Timer" parent="."]
 wait_time = 2.0
+autostart = true
+
+; Advances the wave every 30 seconds
+[node name="WaveTimer" type="Timer" parent="."]
+wait_time = 30.0
 autostart = true
 
 ; HUD rendered on top of everything via CanvasLayer
@@ -55,6 +60,19 @@ offset_right = 1270.0
 offset_bottom = 40.0
 text = "Score: 0"
 horizontal_alignment = 2
+
+; Brief centered announcement shown when a new wave begins
+[node name="WaveAnnounceLabel" type="Label" parent="HUD"]
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -200.0
+offset_top = 300.0
+offset_right = 200.0
+offset_bottom = 360.0
+text = ""
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 48
+visible = false
 
 ; Game Over overlay — hidden until all lives are lost, sits above HUD
 [node name="GameOverScreen" type="CanvasLayer" parent="."]
