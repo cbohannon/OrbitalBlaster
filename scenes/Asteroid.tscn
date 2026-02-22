@@ -1,0 +1,18 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/Asteroid.cs" id="1_asteroid"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_1"]
+radius = 30.0
+
+[node name="Asteroid" type="Area2D"]
+input_pickable = true
+script = ExtResource("1_asteroid")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_1")
+
+; Placeholder rock shape — replace with a Sprite2D once art assets exist
+[node name="Visual" type="Polygon2D" parent="."]
+color = Color(0.55, 0.47, 0.38, 1)
+polygon = PackedVector2Array(0, -30, 18, -22, 30, -8, 25, 15, 10, 28, -10, 28, -25, 15, -30, -8, -18, -22)
