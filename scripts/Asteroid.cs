@@ -47,6 +47,17 @@ public partial class Asteroid : Area2D
             _main.AddScore(PointValue);
             QueueFree();
         }
+        else
+        {
+            FlashHit();
+        }
+    }
+
+    private void FlashHit()
+    {
+        Modulate = new Color(1f, 0.2f, 0.2f);
+        var tween = CreateTween();
+        tween.TweenProperty(this, "modulate", Colors.White, 0.15f);
     }
 
     private void SpawnExplosion()
