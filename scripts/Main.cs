@@ -15,6 +15,7 @@ public partial class Main : Node2D
     private Label _waveAnnounceLabel;
     private CanvasLayer _gameOverScreen;
     private Label _finalScoreLabel;
+    private Label _highScoreLabel;
 
     private PackedScene _asteroidScene;
     private Node2D _gameWorld;
@@ -31,6 +32,7 @@ public partial class Main : Node2D
         _waveAnnounceLabel  = GetNode<Label>("HUD/WaveAnnounceLabel");
         _gameOverScreen     = GetNode<CanvasLayer>("GameOverScreen");
         _finalScoreLabel    = GetNode<Label>("GameOverScreen/FinalScoreLabel");
+        _highScoreLabel     = GetNode<Label>("GameOverScreen/HighScoreLabel");
 
         GetNode<Button>("GameOverScreen/PlayAgainButton").Pressed += OnPlayAgainPressed;
         GetNode<Button>("GameOverScreen/QuitButton").Pressed      += OnQuitPressed;
@@ -155,7 +157,14 @@ public partial class Main : Node2D
         _gameOver = true;
         _spawnTimer.Stop();
         GetNode<Timer>("WaveTimer").Stop();
-        _finalScoreLabel.Text   = $"Final Score: {_score}";
+
+        bool newBest = GameSettings.TrySaveHighScore(_score);
+
+        _finalScoreLabel.Text = $"Final Score: {_score}";
+        _highScoreLabel.Text  = newBest
+            ? "New Best!"
+            : $"Best: {GameSettings.HighScore}";
+
         _gameOverScreen.Visible = true;
     }
 
