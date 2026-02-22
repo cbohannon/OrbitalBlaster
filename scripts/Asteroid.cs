@@ -11,7 +11,6 @@ public partial class Asteroid : Area2D
     public override void _Ready()
     {
         _main = GetTree().Root.GetNode<Main>("Main");
-        InputEvent += OnInputEvent;
     }
 
     public override void _Process(double delta)
@@ -26,7 +25,7 @@ public partial class Asteroid : Area2D
         }
     }
 
-    private void OnInputEvent(Node viewport, InputEvent @event, long shapeIdx)
+    public override void _InputEvent(Viewport viewport, InputEvent @event, int shapeIdx)
     {
         if (@event is InputEventMouseButton mouseEvent &&
             mouseEvent.ButtonIndex == MouseButton.Left &&
