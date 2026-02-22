@@ -2,9 +2,12 @@ using Godot;
 
 public partial class Asteroid : Area2D
 {
-    [Export] public float Speed     = 150f;
-    [Export] public int   HitPoints = 1;
+    [Export] public float Speed      = 150f;
+    [Export] public int   HitPoints  = 1;
     [Export] public int   PointValue = 100;
+
+    private static readonly PackedScene ExplosionScene =
+        GD.Load<PackedScene>("res://scenes/Explosion.tscn");
 
     private Main _main;
 
@@ -40,8 +43,16 @@ public partial class Asteroid : Area2D
         HitPoints--;
         if (HitPoints <= 0)
         {
+            SpawnExplosion();
             _main.AddScore(PointValue);
             QueueFree();
         }
+    }
+
+    private void SpawnExplosion()
+    {
+        var explosion = ExplosionScene.Instantiate<Node2D>();
+        explosion.Position = Position;
+        GetTree().Root.GetNode<Node2D>("Main/GameWorld").AddChild(explosion);
     }
 }

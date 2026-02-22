@@ -1,0 +1,20 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/Explosion.cs" id="1_explosion"]
+
+[node name="Explosion" type="Node2D"]
+script = ExtResource("1_explosion")
+
+[node name="Particles" type="CPUParticles2D" parent="."]
+emitting = true
+amount = 24
+lifetime = 0.6
+one_shot = true
+explosiveness = 1.0
+spread = 180.0
+gravity = Vector2(0, 120)
+initial_velocity_min = 80.0
+initial_velocity_max = 180.0
+scale_amount_min = 3.0
+scale_amount_max = 6.0
+color = Color(1.0, 0.55, 0.1, 1)
