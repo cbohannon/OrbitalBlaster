@@ -2,6 +2,9 @@
 .godot/
 /android/
 
+# Godot export presets (contain local export paths; not portable)
+export_presets.cfg
+
 # C# build artifacts
 obj/
 bin/
@@ -11,6 +14,11 @@ bin/
 
 # Visual Studio
 .vs/
+
+# OS noise
+.DS_Store
+Thumbs.db
+Desktop.ini
 
 # Claude Code working directory
 .claude/

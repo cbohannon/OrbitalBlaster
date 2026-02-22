@@ -1,57 +1,108 @@
 using Godot;
+using System.Collections.Generic;
 
 public partial class Main : Node2D
 {
     [Export] public int StartingLives = 3;
 
-    private int _score = 0;
-    private int _lives;
-    private int _wave = 1;
+    private int  _score    = 0;
+    private int  _lives;
+    private int  _wave     = 1;
     private bool _gameOver = false;
 
-    private Label _scoreLabel;
-    private Label _livesLabel;
-    private Label _waveLabel;
-    private Label _waveAnnounceLabel;
-    private CanvasLayer _gameOverScreen;
-    private Label _finalScoreLabel;
-    private Label _highScoreLabel;
+    private Label        _scoreLabel;
+    private Label        _livesLabel;
+    private Label        _waveLabel;
+    private Label        _waveAnnounceLabel;
+    private CanvasLayer  _gameOverScreen;
+    private Label        _finalScoreLabel;
+    private Label        _highScoreLabel;
+
+    private Node2D _gameWorld;
+    private Timer  _spawnTimer;
+
+    // -------------------------------------------------------------------------
+    // Object pools — pre-allocated to avoid per-spawn GC pressure
+    // -------------------------------------------------------------------------
+
+    private const int AsteroidPoolSize  = 20;
+    private const int ExplosionPoolSize = 15;
+
+    private readonly List<Asteroid>  _asteroidPool  = new List<Asteroid>(AsteroidPoolSize);
+    private readonly List<Explosion> _explosionPool = new List<Explosion>(ExplosionPoolSize);
 
     private PackedScene _asteroidScene;
-    private Node2D _gameWorld;
-    private Timer _spawnTimer;
+    private PackedScene _explosionScene;
+
+    // -------------------------------------------------------------------------
+    // Lifecycle
+    // -------------------------------------------------------------------------
 
     public override void _Ready()
     {
         _lives = StartingLives;
         _wave  = GameSettings.StartingWave;
 
-        _scoreLabel         = GetNode<Label>("HUD/ScoreLabel");
-        _livesLabel         = GetNode<Label>("HUD/LivesLabel");
-        _waveLabel          = GetNode<Label>("HUD/WaveLabel");
-        _waveAnnounceLabel  = GetNode<Label>("HUD/WaveAnnounceLabel");
-        _gameOverScreen     = GetNode<CanvasLayer>("GameOverScreen");
-        _finalScoreLabel    = GetNode<Label>("GameOverScreen/FinalScoreLabel");
-        _highScoreLabel     = GetNode<Label>("GameOverScreen/HighScoreLabel");
+        _scoreLabel        = GetNode<Label>("HUD/ScoreLabel");
+        _livesLabel        = GetNode<Label>("HUD/LivesLabel");
+        _waveLabel         = GetNode<Label>("HUD/WaveLabel");
+        _waveAnnounceLabel = GetNode<Label>("HUD/WaveAnnounceLabel");
+        _gameOverScreen    = GetNode<CanvasLayer>("GameOverScreen");
+        _finalScoreLabel   = GetNode<Label>("GameOverScreen/FinalScoreLabel");
+        _highScoreLabel    = GetNode<Label>("GameOverScreen/HighScoreLabel");
 
         GetNode<Button>("GameOverScreen/PlayAgainButton").Pressed += OnPlayAgainPressed;
         GetNode<Button>("GameOverScreen/QuitButton").Pressed      += OnQuitPressed;
 
-        _asteroidScene = GD.Load<PackedScene>("res://scenes/Asteroid.tscn");
-        _gameWorld     = GetNode<Node2D>("GameWorld");
-        _spawnTimer    = GetNode<Timer>("SpawnTimer");
+        _gameWorld  = GetNode<Node2D>("GameWorld");
+        _spawnTimer = GetNode<Timer>("SpawnTimer");
 
-        _spawnTimer.Timeout                     += SpawnAsteroid;
-        GetNode<Timer>("WaveTimer").Timeout     += OnWaveTimerTimeout;
+        _asteroidScene  = GD.Load<PackedScene>("res://scenes/Asteroid.tscn");
+        _explosionScene = GD.Load<PackedScene>("res://scenes/Explosion.tscn");
 
-        // Apply spawn rate for the chosen starting wave
+        _spawnTimer.Timeout                 += SpawnAsteroid;
+        GetNode<Timer>("WaveTimer").Timeout += OnWaveTimerTimeout;
+
         _spawnTimer.WaitTime = Mathf.Max(0.5f, 2.0f - (_wave - 1) * 0.25f);
 
+        // Stop autostart timers; PrewarmPools will start them once pools are ready
+        _spawnTimer.Stop();
+        GetNode<Timer>("WaveTimer").Stop();
+
         UpdateHUD();
+        PrewarmPools();
+    }
+
+    // Builds pools over several frames (5 nodes/frame) to avoid a single-frame
+    // allocation spike on load.  Starts gameplay timers once pools are ready.
+    private async void PrewarmPools()
+    {
+        for (int i = 0; i < AsteroidPoolSize; i++)
+        {
+            var a = _asteroidScene.Instantiate<Asteroid>();
+            _gameWorld.AddChild(a);
+            a.Deactivate();
+            _asteroidPool.Add(a);
+            if (i % 5 == 4)
+                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+        }
+
+        for (int i = 0; i < ExplosionPoolSize; i++)
+        {
+            var e = _explosionScene.Instantiate<Explosion>();
+            _gameWorld.AddChild(e);
+            e.Deactivate();
+            _explosionPool.Add(e);
+            if (i % 5 == 4)
+                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+        }
+
+        _spawnTimer.Start();
+        GetNode<Timer>("WaveTimer").Start();
     }
 
     // -------------------------------------------------------------------------
-    // Input — handle clicks centrally to avoid Control node interference
+    // Input
     // -------------------------------------------------------------------------
 
     public override void _UnhandledInput(InputEvent @event)
@@ -60,9 +111,11 @@ public partial class Main : Node2D
             mouseEvent.ButtonIndex == MouseButton.Left &&
             mouseEvent.Pressed)
         {
-            foreach (var child in _gameWorld.GetChildren())
+            // Iterate pool directly — no GetChildren() allocation
+            for (int i = 0; i < _asteroidPool.Count; i++)
             {
-                if (child is Asteroid asteroid &&
+                var asteroid = _asteroidPool[i];
+                if (asteroid.IsActive &&
                     asteroid.Position.DistanceTo(mouseEvent.Position) <= 35f)
                 {
                     asteroid.TakeHit();
@@ -88,7 +141,6 @@ public partial class Main : Node2D
         SoundManager.Instance.PlayWaveAdvance();
         UpdateHUD();
 
-        // Shrink spawn interval each wave, floor at 0.5s
         _spawnTimer.WaitTime = Mathf.Max(0.5f, _spawnTimer.WaitTime - 0.25f);
 
         ShowWaveAnnouncement();
@@ -100,7 +152,6 @@ public partial class Main : Node2D
         _waveAnnounceLabel.Modulate = Colors.White;
         _waveAnnounceLabel.Visible  = true;
 
-        // Fade out over 1.5s after a short pause
         var tween = CreateTween();
         tween.TweenProperty(_waveAnnounceLabel, "modulate:a", 0f, 1.5f)
              .SetDelay(0.5f);
@@ -115,19 +166,64 @@ public partial class Main : Node2D
 
     private void SpawnAsteroid()
     {
-        var asteroid = _asteroidScene.Instantiate<Asteroid>();
-        asteroid.Position = new Vector2((float)GD.RandRange(50, 1230), -30f);
+        // Find an inactive asteroid in the pool
+        Asteroid asteroid = null;
+        for (int i = 0; i < _asteroidPool.Count; i++)
+        {
+            if (!_asteroidPool[i].IsActive)
+            {
+                asteroid = _asteroidPool[i];
+                break;
+            }
+        }
 
-        // Scale difficulty with wave number
-        asteroid.Speed      = 150f + (_wave - 1) * 25f;
-        asteroid.HitPoints  = 1 + (_wave - 1) / 3;       // +1 HP every 3 waves
-        asteroid.PointValue = 100 + (_wave - 1) * 50;    // +50 pts per wave
+        // Pool exhausted — grow it rather than drop the spawn
+        if (asteroid == null)
+        {
+            asteroid = _asteroidScene.Instantiate<Asteroid>();
+            _gameWorld.AddChild(asteroid);
+            _asteroidPool.Add(asteroid);
+        }
 
-        _gameWorld.AddChild(asteroid);
+        asteroid.Activate(
+            new Vector2((float)GD.RandRange(50, 1230), -30f),
+            150f + (_wave - 1) * 25f,
+            1    + (_wave - 1) / 3,
+            100  + (_wave - 1) * 50
+        );
+    }
+
+    public void SpawnExplosion(Vector2 position)
+    {
+        Explosion explosion = null;
+        for (int i = 0; i < _explosionPool.Count; i++)
+        {
+            if (!_explosionPool[i].Visible)
+            {
+                explosion = _explosionPool[i];
+                break;
+            }
+        }
+
+        if (explosion == null)
+        {
+            explosion = _explosionScene.Instantiate<Explosion>();
+            _gameWorld.AddChild(explosion);
+            _explosionPool.Add(explosion);
+        }
+
+        explosion.Activate(position);
     }
 
     // -------------------------------------------------------------------------
-    // Public API — called by game objects (Asteroid, etc.)
+    // Pool returns — called by Asteroid and Explosion when done
+    // -------------------------------------------------------------------------
+
+    public void ReturnAsteroidToPool(Asteroid asteroid)  => asteroid.Deactivate();
+    public void ReturnExplosionToPool(Explosion explosion) => explosion.Deactivate();
+
+    // -------------------------------------------------------------------------
+    // Public API — called by Asteroid
     // -------------------------------------------------------------------------
 
     public void AddScore(int points)
