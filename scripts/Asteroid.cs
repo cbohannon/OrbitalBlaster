@@ -35,7 +35,7 @@ public partial class Asteroid : Area2D
         }
     }
 
-    private void TakeHit()
+    public void TakeHit()
     {
         HitPoints--;
         if (HitPoints <= 0)

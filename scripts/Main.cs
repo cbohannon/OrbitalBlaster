@@ -32,6 +32,28 @@ public partial class Main : Node2D
     }
 
     // -------------------------------------------------------------------------
+    // Input — handle clicks centrally to avoid Control node interference
+    // -------------------------------------------------------------------------
+
+    public override void _UnhandledInput(InputEvent @event)
+    {
+        if (@event is InputEventMouseButton mouseEvent &&
+            mouseEvent.ButtonIndex == MouseButton.Left &&
+            mouseEvent.Pressed)
+        {
+            foreach (var child in _gameWorld.GetChildren())
+            {
+                if (child is Asteroid asteroid &&
+                    asteroid.Position.DistanceTo(mouseEvent.Position) <= 35f)
+                {
+                    asteroid.TakeHit();
+                    return;
+                }
+            }
+        }
+    }
+
+    // -------------------------------------------------------------------------
     // Spawning
     // -------------------------------------------------------------------------
 
