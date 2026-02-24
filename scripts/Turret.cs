@@ -22,7 +22,12 @@ public partial class Turret : Node2D
         new Vector2(-18f, DomeCenterY),
     };
 
-    private Vector2 _barrelDir = Vector2.Up;
+    private const float FlashDuration = 0.12f;
+
+    private Vector2 _barrelDir  = Vector2.Up;
+    private float   _flashTimer = 0f;
+
+    public void TriggerMuzzleFlash() => _flashTimer = FlashDuration;
 
     public override void _Process(double delta)
     {
@@ -32,6 +37,9 @@ public partial class Turret : Node2D
         float angle = (mousePos - GlobalPosition).Angle();
         angle = Mathf.Clamp(angle, Mathf.DegToRad(-170f), Mathf.DegToRad(-10f));
         _barrelDir = Vector2.Right.Rotated(angle);
+
+        if (_flashTimer > 0f)
+            _flashTimer -= (float)delta;
 
         QueueRedraw();
     }
@@ -51,5 +59,14 @@ public partial class Turret : Node2D
         DrawLine(domeCenter, barrelTip, ColorBarrel, BarrelWidth, true);
         DrawCircle(domeCenter, BarrelWidth * 0.5f, ColorBarrel);
         DrawCircle(barrelTip,  BarrelWidth * 0.5f + 1f, ColorMuzzle);
+
+        // 4. Muzzle flash — expanding ring + bright core, both fade out
+        if (_flashTimer > 0f)
+        {
+            float t = _flashTimer / FlashDuration;             // 1 → 0
+            float outerRadius = 4f + 16f * (1f - t);          // expands as it fades
+            DrawCircle(barrelTip, outerRadius, new Color(1f, 0.85f, 0.4f, t * 0.9f));
+            DrawCircle(barrelTip, 6f,          new Color(1f, 1.00f, 0.9f, t));
+        }
     }
 }
