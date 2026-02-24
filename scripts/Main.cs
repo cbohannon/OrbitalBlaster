@@ -20,6 +20,7 @@ public partial class Main : Node2D
 
     private Node2D _gameWorld;
     private Timer  _spawnTimer;
+    private Turret _turret;
 
     // -------------------------------------------------------------------------
     // Object pools — pre-allocated to avoid per-spawn GC pressure
@@ -56,6 +57,7 @@ public partial class Main : Node2D
 
         _gameWorld  = GetNode<Node2D>("GameWorld");
         _spawnTimer = GetNode<Timer>("SpawnTimer");
+        _turret     = GetNode<Turret>("Turret");
 
         _asteroidScene  = GD.Load<PackedScene>("res://scenes/Asteroid.tscn");
         _explosionScene = GD.Load<PackedScene>("res://scenes/Explosion.tscn");
@@ -111,6 +113,8 @@ public partial class Main : Node2D
             mouseEvent.ButtonIndex == MouseButton.Left &&
             mouseEvent.Pressed)
         {
+            _turret.TriggerMuzzleFlash();
+
             // Iterate pool directly — no GetChildren() allocation
             for (int i = 0; i < _asteroidPool.Count; i++)
             {
