@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3 uid="uid://c2hvt4yqm5m57"]
+[gd_scene load_steps=4 format=3 uid="uid://c2hvt4yqm5m57"]
 
 [ext_resource type="Script" path="res://scripts/Main.cs" id="1_main"]
 [ext_resource type="Script" path="res://scripts/Starfield.cs" id="2_starfield"]
+[ext_resource type="Script" path="res://scripts/Turret.cs" id="3_turret"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -28,6 +29,11 @@ mouse_filter = 2
 
 ; Parent node for all spawned gameplay objects (asteroids, projectiles, etc.)
 [node name="GameWorld" type="Node2D" parent="."]
+
+; Mouse-tracking turret — dome + barrel centered on the defense line
+[node name="Turret" type="Node2D" parent="."]
+position = Vector2(640.0, 650.0)
+script = ExtResource("3_turret")
 
 ; Fires every 2 seconds to spawn a new asteroid (interval shrinks each wave)
 [node name="SpawnTimer" type="Timer" parent="."]
