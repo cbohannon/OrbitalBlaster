@@ -116,7 +116,7 @@ public partial class Main : Node2D
             {
                 var asteroid = _asteroidPool[i];
                 if (asteroid.IsActive &&
-                    asteroid.Position.DistanceTo(mouseEvent.Position) <= 35f)
+                    asteroid.Position.DistanceTo(mouseEvent.Position) <= 35f * asteroid.Scale.X)
                 {
                     asteroid.TakeHit();
                     return;
@@ -164,6 +164,12 @@ public partial class Main : Node2D
     // Spawning
     // -------------------------------------------------------------------------
 
+    private static AsteroidSize PickRandomSize()
+    {
+        int roll = (int)GD.RandRange(0, 3);
+        return roll switch { 0 => AsteroidSize.Small, 2 => AsteroidSize.Large, _ => AsteroidSize.Medium };
+    }
+
     private void SpawnAsteroid()
     {
         // Find an inactive asteroid in the pool
@@ -189,7 +195,8 @@ public partial class Main : Node2D
             new Vector2((float)GD.RandRange(50, 1230), -30f),
             150f + (_wave - 1) * 25f,
             1    + (_wave - 1) / 3,
-            100  + (_wave - 1) * 50
+            100  + (_wave - 1) * 50,
+            PickRandomSize()
         );
     }
 

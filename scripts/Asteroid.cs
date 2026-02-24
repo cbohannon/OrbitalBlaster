@@ -1,5 +1,7 @@
 using Godot;
 
+public enum AsteroidSize { Small, Medium, Large }
+
 public partial class Asteroid : Area2D
 {
     [Export] public float Speed      = 150f;
@@ -7,6 +9,7 @@ public partial class Asteroid : Area2D
     [Export] public int   PointValue = 100;
 
     public bool IsActive { get; private set; } = false;
+    public AsteroidSize Size { get; private set; } = AsteroidSize.Medium;
 
     private Main  _main;
     private float _rotationSpeed;
@@ -22,12 +25,24 @@ public partial class Asteroid : Area2D
     // Pool interface
     // -------------------------------------------------------------------------
 
-    public void Activate(Vector2 position, float speed, int hitPoints, int pointValue)
+    private static (float scale, float speedMult, int hpBonus, float pointsMult) SizeData(AsteroidSize size) =>
+        size switch
+        {
+            AsteroidSize.Small  => (0.6f, 1.3f, 0, 0.6f),
+            AsteroidSize.Large  => (1.5f, 0.7f, 1, 2.0f),
+            _                   => (1.0f, 1.0f, 0, 1.0f),
+        };
+
+    public void Activate(Vector2 position, float speed, int hitPoints, int pointValue, AsteroidSize size = AsteroidSize.Medium)
     {
+        var (scaleFactor, speedMult, hpBonus, pointsMult) = SizeData(size);
+
         Position    = position;
-        Speed       = speed;
-        HitPoints   = hitPoints;
-        PointValue  = pointValue;
+        Speed       = speed * speedMult;
+        HitPoints   = hitPoints + hpBonus;
+        PointValue  = Mathf.RoundToInt(pointValue * pointsMult);
+        Scale       = Vector2.One * scaleFactor;
+        Size        = size;
         Modulate    = Colors.White;
         RotationDegrees = 0f;
 
