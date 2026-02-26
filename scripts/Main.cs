@@ -28,12 +28,15 @@ public partial class Main : Node2D
 
     private const int AsteroidPoolSize  = 20;
     private const int ExplosionPoolSize = 15;
+    private const int PowerUpPoolSize   = 3;
 
     private readonly List<Asteroid>  _asteroidPool  = new List<Asteroid>(AsteroidPoolSize);
     private readonly List<Explosion> _explosionPool = new List<Explosion>(ExplosionPoolSize);
+    private readonly List<PowerUp>   _powerUpPool   = new List<PowerUp>(PowerUpPoolSize);
 
     private PackedScene _asteroidScene;
     private PackedScene _explosionScene;
+    private PackedScene _powerUpScene;
 
     // -------------------------------------------------------------------------
     // Lifecycle
@@ -61,6 +64,7 @@ public partial class Main : Node2D
 
         _asteroidScene  = GD.Load<PackedScene>("res://scenes/Asteroid.tscn");
         _explosionScene = GD.Load<PackedScene>("res://scenes/Explosion.tscn");
+        _powerUpScene   = GD.Load<PackedScene>("res://scenes/PowerUp.tscn");
 
         _spawnTimer.Timeout                 += SpawnAsteroid;
         GetNode<Timer>("WaveTimer").Timeout += OnWaveTimerTimeout;
@@ -99,6 +103,14 @@ public partial class Main : Node2D
                 await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
         }
 
+        for (int i = 0; i < PowerUpPoolSize; i++)
+        {
+            var p = _powerUpScene.Instantiate<PowerUp>();
+            _gameWorld.AddChild(p);
+            p.Deactivate();
+            _powerUpPool.Add(p);
+        }
+
         _spawnTimer.Start();
         GetNode<Timer>("WaveTimer").Start();
     }
@@ -115,7 +127,19 @@ public partial class Main : Node2D
         {
             _turret.TriggerMuzzleFlash();
 
-            // Iterate pool directly — no GetChildren() allocation
+            // Power-ups take click priority
+            for (int i = 0; i < _powerUpPool.Count; i++)
+            {
+                var pu = _powerUpPool[i];
+                if (pu.IsActive &&
+                    pu.Position.DistanceTo(mouseEvent.Position) <= PowerUp.ClickRadius)
+                {
+                    CollectPowerUp(pu);
+                    return;
+                }
+            }
+
+            // Iterate asteroid pool directly — no GetChildren() allocation
             for (int i = 0; i < _asteroidPool.Count; i++)
             {
                 var asteroid = _asteroidPool[i];
@@ -227,11 +251,49 @@ public partial class Main : Node2D
     }
 
     // -------------------------------------------------------------------------
-    // Pool returns — called by Asteroid and Explosion when done
+    // Pool returns — called by Asteroid, Explosion, and PowerUp when done
     // -------------------------------------------------------------------------
 
-    public void ReturnAsteroidToPool(Asteroid asteroid)  => asteroid.Deactivate();
+    public void ReturnAsteroidToPool(Asteroid asteroid)    => asteroid.Deactivate();
     public void ReturnExplosionToPool(Explosion explosion) => explosion.Deactivate();
+    public void ReturnPowerUpToPool(PowerUp powerUp)       => powerUp.Deactivate();
+
+    // -------------------------------------------------------------------------
+    // Power-up logic
+    // -------------------------------------------------------------------------
+
+    public void TryDropPowerUp(Vector2 position)
+    {
+        if (_gameOver || GD.Randf() > 0.05f) return;
+
+        PowerUp powerUp = null;
+        for (int i = 0; i < _powerUpPool.Count; i++)
+        {
+            if (!_powerUpPool[i].IsActive) { powerUp = _powerUpPool[i]; break; }
+        }
+
+        if (powerUp == null)
+        {
+            powerUp = _powerUpScene.Instantiate<PowerUp>();
+            _gameWorld.AddChild(powerUp);
+            _powerUpPool.Add(powerUp);
+        }
+
+        powerUp.Activate(position);
+    }
+
+    private void CollectPowerUp(PowerUp powerUp)
+    {
+        if (_gameOver) return;
+        ReturnPowerUpToPool(powerUp);
+
+        // Area blast — instantly destroy every active asteroid
+        for (int i = 0; i < _asteroidPool.Count; i++)
+        {
+            if (_asteroidPool[i].IsActive)
+                _asteroidPool[i].BlastKill();
+        }
+    }
 
     // -------------------------------------------------------------------------
     // Public API — called by Asteroid
