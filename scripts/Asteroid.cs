@@ -102,16 +102,27 @@ public partial class Asteroid : Area2D
         HitPoints--;
         if (HitPoints <= 0)
         {
+            var pos = Position;
             SoundManager.Instance.PlayExplosion();
-            _main.SpawnExplosion(Position);
+            _main.SpawnExplosion(pos);
             _main.AddScore(PointValue);
             _main.ReturnAsteroidToPool(this);
+            _main.TryDropPowerUp(pos);       // 15% chance to drop a power-up
         }
         else
         {
             SoundManager.Instance.PlayHit();
             FlashHit();
         }
+    }
+
+    // Called by area blast — instant kill with no power-up drop chain
+    public void BlastKill()
+    {
+        SoundManager.Instance.PlayExplosion();
+        _main.SpawnExplosion(Position);
+        _main.AddScore(PointValue);
+        _main.ReturnAsteroidToPool(this);
     }
 
     private void FlashHit()

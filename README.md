@@ -9,6 +9,18 @@ A fast-paced 2D arcade game built with Godot 4.6.1 and C#. Asteroids fall from s
 - **Waves** advance every 30 seconds — each wave spawns faster asteroids worth more points.
 - **Game over** when all lives are lost. Your high score is saved between sessions.
 
+### Asteroid sizes
+
+| Size   | Speed    | Hits to kill | Points  |
+|--------|----------|--------------|---------|
+| Small  | Faster   | 1            | Fewer   |
+| Medium | Normal   | 1+           | Normal  |
+| Large  | Slower   | 2+           | More    |
+
+### Power-up
+
+Occasionally a **golden orb** drops from a destroyed asteroid and drifts down the screen. Click it before it reaches the defense line to trigger an **Area Blast** — every asteroid on screen is instantly destroyed.
+
 ### Difficulty modes (Start Screen)
 
 | Mode | Starting Wave |
